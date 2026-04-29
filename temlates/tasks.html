@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Tasks{% endblock %}
+{% block page_title %}Tasks{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('create_task') }}" class="btn btn-primary">+ Add Task</a>
+{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<form method="get" class="filter-bar">
+  <input type="text" name="search" value="{{ search }}" placeholder="Search tasks…" class="input input-sm">
+  <select name="priority" class="input input-sm">
+    <option value="">All Priorities</option>
+    <option value="high"   {% if priority=='high'   %}selected{% endif %}>🔴 High</option>
+    <option value="medium" {% if priority=='medium' %}selected{% endif %}>🟡 Medium</option>
+    <option value="low"    {% if priority=='low'    %}selected{% endif %}>🟢 Low</option>
+  </select>
+  <select name="status" class="input input-sm">
+    <option value="">All Statuses</option>
+    <option value="pending"     {% if status=='pending'     %}selected{% endif %}>Pending</option>
+    <option value="in_progress" {% if status=='in_progress' %}selected{% endif %}>In Progress</option>
+    <option value="done"        {% if status=='done'        %}selected{% endif %}>Done</option>
+  </select>
+  <select name="category" class="input input-sm">
+    <option value="">All Categories</option>
+    {% for cat in categories %}
+    <option value="{{ cat.id }}" {% if cat_id|string == cat.id|string %}selected{% endif %}>{{ cat.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="sort" class="input input-sm">
+    <option value="newest"   {% if sort=='newest'   %}selected{% endif %}>Newest First</option>
+    <option value="oldest"   {% if sort=='oldest'   %}selected{% endif %}>Oldest First</option>
+    <option value="due"      {% if sort=='due'      %}selected{% endif %}>Due Date</option>
+    <option value="priority" {% if sort=='priority' %}selected{% endif %}>Priority</option>
+  </select>
+  <button type="submit" class="btn btn-secondary">Filter</button>
+  <a href="{{ url_for('tasks') }}" class="btn btn-ghost">Clear</a>
+</form>
+
+<!-- Table -->
+{% if tasks %}
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Done</th>
+        <th>Title</th>
+        <th>Priority</th>
+        <th>Status</th>
+        <th>Category</th>
+        <th>Due Date</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for task in tasks %}
+      <tr class="{% if task.is_overdue() %}row-overdue{% endif %} {% if task.status=='done' %}row-done{% endif %}">
+        <td>
+          <button class="toggle-btn {% if task.status=='done' %}toggled{% endif %}"
+                  data-id="{{ task.id }}" title="Toggle complete">
+            {% if task.status == 'done' %}✓{% else %}○{% endif %}
+          </button>
+        </td>
+        <td>
+          <a href="{{ url_for('view_task', task_id=task.id) }}" class="task-link">{{ task.title }}</a>
+          {% if task.is_overdue() %}<span class="badge badge-overdue">Overdue</span>{% endif %}
+          {% if task.is_due_soon() and not task.is_overdue() %}<span class="badge badge-pending">Soon</span>{% endif %}
+        </td>
+        <td><span class="badge badge-priority-{{ task.priority }}">{{ task.priority }}</span></td>
+        <td><span class="badge badge-{{ task.status }}">{{ task.status.replace('_',' ') }}</span></td>
+        <td>
+          {% if task.category %}
+            <span class="cat-chip" style="--c:{{ task.category.color }}">{{ task.category.name }}</span>
+          {% else %}—{% endif %}
+        </td>
+        <td>{{ task.due_date.strftime('%b %d, %Y') if task.due_date else '—' }}</td>
+        <td class="actions-cell">
+          <a href="{{ url_for('view_task', task_id=task.id) }}" class="action-btn" title="View">👁</a>
+          <a href="{{ url_for('edit_task', task_id=task.id) }}" class="action-btn" title="Edit">✏️</a>
+          <form method="post" action="{{ url_for('delete_task', task_id=task.id) }}" class="inline-form"
+                onsubmit="return confirm('Delete this task?')">
+            <button type="submit" class="action-btn action-delete" title="Delete">🗑</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="result-count">{{ tasks|length }} task{{ 's' if tasks|length != 1 }}</p>
+{% else %}
+  <div class="empty-state">
+    <div class="empty-icon">◻</div>
+    <h3>No tasks found</h3>
+    <p>{% if search or priority or status or cat_id %}Try adjusting your filters.{% else %}Get started by creating your first task!{% endif %}</p>
+    <a href="{{ url_for('create_task') }}" class="btn btn-primary">+ Create Task</a>
+  </div>
+{% endif %}
+{% endblock %}
