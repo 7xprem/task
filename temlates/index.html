@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('create_task') }}" class="btn btn-primary">+ Add Task</a>
+{% endblock %}
+
+{% block content %}
+<!-- Stat Cards -->
+<div class="stats-grid">
+  <div class="stat-card stat-total">
+    <div class="stat-label">Total Tasks</div>
+    <div class="stat-value">{{ total }}</div>
+    <div class="stat-bar"><div style="width:100%"></div></div>
+  </div>
+  <div class="stat-card stat-pending">
+    <div class="stat-label">Pending</div>
+    <div class="stat-value">{{ pending }}</div>
+    <div class="stat-bar"><div style="width:{% if total %}{{ (pending/total*100)|int }}%{% else %}0%{% endif %}"></div></div>
+  </div>
+  <div class="stat-card stat-progress">
+    <div class="stat-label">In Progress</div>
+    <div class="stat-value">{{ in_prog }}</div>
+    <div class="stat-bar"><div style="width:{% if total %}{{ (in_prog/total*100)|int }}%{% else %}0%{% endif %}"></div></div>
+  </div>
+  <div class="stat-card stat-done">
+    <div class="stat-label">Completed</div>
+    <div class="stat-value">{{ done }}</div>
+    <div class="stat-bar"><div style="width:{% if total %}{{ (done/total*100)|int }}%{% else %}0%{% endif %}"></div></div>
+  </div>
+  {% if overdue > 0 %}
+  <div class="stat-card stat-overdue">
+    <div class="stat-label">Overdue</div>
+    <div class="stat-value">{{ overdue }}</div>
+    <div class="stat-bar"><div style="width:{% if total %}{{ (overdue/total*100)|int }}%{% else %}0%{% endif %}"></div></div>
+  </div>
+  {% endif %}
+</div>
+
+<div class="dashboard-grid">
+  <!-- Recent Tasks -->
+  <section class="card">
+    <div class="card-header">
+      <h2>Recent Tasks</h2>
+      <a href="{{ url_for('tasks') }}" class="link-subtle">View all →</a>
+    </div>
+    {% if recent %}
+      <ul class="task-list">
+        {% for task in recent %}
+        <li class="task-row {% if task.status == 'done' %}task-done{% endif %}">
+          <span class="priority-dot priority-{{ task.priority }}"></span>
+          <a href="{{ url_for('view_task', task_id=task.id) }}" class="task-title">{{ task.title }}</a>
+          <span class="badge badge-{{ task.status }}">{{ task.status.replace('_',' ') }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-msg">No tasks yet. <a href="{{ url_for('create_task') }}">Create one!</a></p>
+    {% endif %}
+  </section>
+
+  <!-- Categories -->
+  <section class="card">
+    <div class="card-header">
+      <h2>Categories</h2>
+      <a href="{{ url_for('create_category') }}" class="link-subtle">+ New</a>
+    </div>
+    {% if categories %}
+      <ul class="cat-list">
+        {% for cat in categories %}
+        <li class="cat-row">
+          <span class="cat-dot" style="background:{{ cat.color }}"></span>
+          <span class="cat-name">{{ cat.name }}</span>
+          <span class="cat-count">{{ cat.task_count() }} tasks</span>
+        </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="empty-msg">No categories yet. <a href="{{ url_for('create_category') }}">Add one!</a></p>
+    {% endif %}
+  </section>
+</div>
+
+<!-- Due Soon -->
+{% if due_soon %}
+<section class="card" style="margin-top:20px">
+  <div class="card-header">
+    <h2>⚠️ Due Soon <span style="font-size:13px;color:var(--muted);font-weight:400">(next 3 days)</span></h2>
+    <a href="{{ url_for('tasks') }}?sort=due" class="link-subtle">View all →</a>
+  </div>
+  <ul class="task-list">
+    {% for task in due_soon %}
+    <li class="task-row">
+      <span class="priority-dot priority-{{ task.priority }}"></span>
+      <a href="{{ url_for('view_task', task_id=task.id) }}" class="task-title">{{ task.title }}</a>
+      {% if task.category %}
+        <span class="cat-chip" style="--c:{{ task.category.color }}">{{ task.category.name }}</span>
+      {% endif %}
+      <span class="badge badge-overdue">{{ task.due_date.strftime('%b %d') }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}
